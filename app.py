@@ -6,7 +6,10 @@ Built with Python Flask & SQLite
 
 import os
 import re
+import hmac
+import secrets
 import sqlite3
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask import (
     Flask, render_template, request, redirect,
@@ -28,27 +31,142 @@ INSTANCE_DIR = os.path.join(BASE_DIR, 'instance')
 DATABASE_PATH = os.path.join(INSTANCE_DIR, 'workshop.db')
 SCHEMA_PATH = os.path.join(BASE_DIR, 'database', 'schema.sql')
 
-# Ensure instance directory exists
-os.makedirs(INSTANCE_DIR, exist_ok=True)
+# Load a local .env file if present (never committed; see .gitignore)
+_env_file = os.path.join(BASE_DIR, '.env')
+if os.path.exists(_env_file):
+    with open(_env_file, encoding='utf-8') as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith('#') and '=' in _line:
+                _k, _v = _line.split('=', 1)
+                os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
+
+# Cloud MySQL / TiDB is used when DB_HOST is set (e.g. on Vercel).
+# Otherwise the app falls back to a local SQLite file for development and tests.
+USE_MYSQL = bool(os.getenv('DB_HOST'))
+IS_PRODUCTION = bool(os.getenv('VERCEL')) or os.getenv('FLASK_ENV') == 'production'
 
 app = Flask(
     __name__,
     template_folder=os.path.join(BASE_DIR, 'templates'),
     static_folder=os.path.join(BASE_DIR, 'static')
 )
-app.config['SECRET_KEY'] = 'community-skill-workshop-secret-key-2026'
+
+# SECRET_KEY signs the login session cookie. It must be a private random value
+# in production, otherwise anyone could forge an admin session.
+_secret = os.getenv('SECRET_KEY')
+if not _secret:
+    if IS_PRODUCTION:
+        raise RuntimeError('SECRET_KEY environment variable must be set in production.')
+    _secret = 'local-dev-only-secret-key-not-for-production'
+app.config['SECRET_KEY'] = _secret
 app.config['DATABASE'] = DATABASE_PATH
+
+# Hardened session cookie
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = IS_PRODUCTION
+app.config['PERMANENT_SESSION_LIFETIME'] = 60 * 60 * 8  # 8 hours
+
+if not USE_MYSQL:
+    os.makedirs(INSTANCE_DIR, exist_ok=True)
 
 
 # ----------------------------------------------------
 # Database Helpers
 # ----------------------------------------------------
+class _Row(dict):
+    """dict row that also supports positional access like sqlite3.Row (row[0])."""
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return list(self.values())[key]
+        return dict.__getitem__(self, key)
+
+
+class _MySQLCursor:
+    def __init__(self, cursor):
+        self._c = cursor
+
+    def fetchone(self):
+        row = self._c.fetchone()
+        return _Row(row) if row is not None else None
+
+    def fetchall(self):
+        return [_Row(r) for r in self._c.fetchall()]
+
+    @property
+    def lastrowid(self):
+        return self._c.lastrowid
+
+    @property
+    def rowcount(self):
+        return self._c.rowcount
+
+
+_UPSERT_RE = re.compile(r'ON CONFLICT\s*\([^)]*\)\s*DO UPDATE SET', re.I)
+_EXCLUDED_RE = re.compile(r'excluded\.(\w+)', re.I)
+
+
+def connect_mysql(database=None):
+    """Opens a TLS-encrypted, certificate-verified connection to the cloud MySQL/TiDB database."""
+    import ssl
+    import pymysql
+    try:
+        import certifi
+        ctx = ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        ctx = ssl.create_default_context()
+    params = dict(
+        host=os.environ['DB_HOST'],
+        port=int(os.getenv('DB_PORT', '4000')),
+        user=os.environ['DB_USER'],
+        password=os.getenv('DB_PASSWORD', ''),
+        charset='utf8mb4',
+        cursorclass=pymysql.cursors.DictCursor,
+        connect_timeout=10,
+        ssl=ctx,
+    )
+    db_name = os.getenv('DB_NAME', 'skillconnect_db') if database is None else database
+    if db_name:
+        params['database'] = db_name
+    return pymysql.connect(**params)
+
+
+class _MySQLConnection:
+    """Thin adapter so the existing sqlite-style code (db.execute(sql, params)) runs on MySQL/TiDB."""
+    def __init__(self):
+        self._conn = connect_mysql()
+
+    @staticmethod
+    def _translate(sql):
+        sql = _UPSERT_RE.sub('ON DUPLICATE KEY UPDATE', sql)
+        sql = _EXCLUDED_RE.sub(r'VALUES(\1)', sql)
+        return sql.replace('?', '%s')
+
+    def execute(self, sql, params=()):
+        cur = self._conn.cursor()
+        cur.execute(self._translate(sql), tuple(params) if params else None)
+        return _MySQLCursor(cur)
+
+    def commit(self):
+        self._conn.commit()
+
+    def rollback(self):
+        self._conn.rollback()
+
+    def close(self):
+        self._conn.close()
+
+
 def get_db():
     """Opens a new database connection if not already open in current request context."""
     if 'db' not in g:
-        g.db = sqlite3.connect(app.config['DATABASE'])
-        g.db.row_factory = sqlite3.Row  # Return rows as dictionary-like objects
-        g.db.execute("PRAGMA foreign_keys = ON")
+        if USE_MYSQL and not app.config.get('TESTING'):
+            g.db = _MySQLConnection()
+        else:
+            g.db = sqlite3.connect(app.config['DATABASE'])
+            g.db.row_factory = sqlite3.Row  # Return rows as dictionary-like objects
+            g.db.execute("PRAGMA foreign_keys = ON")
     return g.db
 
 
@@ -61,7 +179,7 @@ def close_db(exception=None):
 
 
 def init_db():
-    """Initializes SQLite tables and seed data from schema.sql."""
+    """Initializes local SQLite tables and seed data from schema.sql (development only)."""
     if not os.path.exists(SCHEMA_PATH):
         raise FileNotFoundError(f"Schema file not found at {SCHEMA_PATH}")
 
@@ -75,9 +193,82 @@ def init_db():
     print("Database initialized successfully with sample seed data.")
 
 
-# Auto-initialize database on first run if database file is missing or empty
-if not os.path.exists(DATABASE_PATH) or os.path.getsize(DATABASE_PATH) == 0:
+# Auto-initialize the local SQLite database on first run (never on the cloud database)
+if not USE_MYSQL and (not os.path.exists(DATABASE_PATH) or os.path.getsize(DATABASE_PATH) == 0):
     init_db()
+elif not USE_MYSQL:
+    # Upgrade older local databases with tables added later
+    _conn = sqlite3.connect(DATABASE_PATH)
+    _conn.execute("""CREATE TABLE IF NOT EXISTS login_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL,
+        ip_address TEXT, attempted_at TEXT NOT NULL)""")
+    _conn.commit()
+    _conn.close()
+
+
+# ----------------------------------------------------
+# Security: CSRF protection, login throttling, headers
+# ----------------------------------------------------
+def csrf_token():
+    """Returns the per-session CSRF token, creating it on first use."""
+    if '_csrf_token' not in session:
+        session['_csrf_token'] = secrets.token_urlsafe(32)
+    return session['_csrf_token']
+
+
+app.jinja_env.globals['csrf_token'] = csrf_token
+
+
+@app.before_request
+def csrf_protect():
+    """Rejects state-changing requests that don't carry the session's CSRF token."""
+    if request.method in ('POST', 'PUT', 'PATCH', 'DELETE') and not app.config.get('TESTING'):
+        sent = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token', '')
+        expected = session.get('_csrf_token')
+        if not expected or not hmac.compare_digest(str(sent), str(expected)):
+            abort(400, description='Your session expired or the form is invalid. Please reload the page and try again.')
+
+
+@app.after_request
+def set_security_headers(response):
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'DENY')
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+    if IS_PRODUCTION:
+        response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    return response
+
+
+LOGIN_MAX_FAILURES = 5
+LOGIN_WINDOW_MINUTES = 15
+
+
+def _now_str(delta_minutes=0):
+    return (datetime.now(timezone.utc) + timedelta(minutes=delta_minutes)).strftime('%Y-%m-%d %H:%M:%S')
+
+
+def login_is_locked(db, email):
+    """True when this email has too many recent failed sign-in attempts."""
+    row = db.execute(
+        "SELECT COUNT(*) FROM login_attempts WHERE email = ? AND attempted_at > ?",
+        (email, _now_str(-LOGIN_WINDOW_MINUTES))
+    ).fetchone()
+    return row[0] >= LOGIN_MAX_FAILURES
+
+
+def record_login_failure(db, email):
+    ip = (request.headers.get('X-Forwarded-For') or request.remote_addr or '').split(',')[0].strip()[:64]
+    db.execute(
+        "INSERT INTO login_attempts (email, ip_address, attempted_at) VALUES (?, ?, ?)",
+        (email, ip, _now_str())
+    )
+    db.commit()
+
+
+def clear_login_failures(db, email):
+    db.execute("DELETE FROM login_attempts WHERE email = ?", (email,))
+    db.commit()
 
 
 # ----------------------------------------------------
@@ -154,8 +345,8 @@ def register():
             flash('Please provide a valid email address (e.g., name@example.com).', 'danger')
             return render_template('register.html', name=name, email=email, phone=phone)
 
-        if not password or len(password) < 6:
-            flash('Password is required and must be at least 6 characters long.', 'danger')
+        if not password or len(password) < 8:
+            flash('Password is required and must be at least 8 characters long.', 'danger')
             return render_template('register.html', name=name, email=email, phone=phone)
 
         if password != confirm_password:
@@ -209,6 +400,12 @@ def login():
             return render_template('login.html', email=email, next=next_page)
 
         db = get_db()
+
+        # Brute-force protection: temporarily lock an email after repeated failures
+        if login_is_locked(db, email):
+            flash(f'Too many failed sign-in attempts. Please wait {LOGIN_WINDOW_MINUTES} minutes and try again.', 'danger')
+            return render_template('login.html', email=email, next=next_page), 429
+
         # Parameterized SQL query
         user = db.execute(
             "SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (email,)
@@ -216,6 +413,7 @@ def login():
 
         # Verify password securely against stored hash
         if user and check_password_hash(user['password_hash'], password):
+            clear_login_failures(db, email)
             # Regenerate/clear old session to prevent session fixation attacks
             session.clear()
             session['user_id'] = user['id']
@@ -227,7 +425,8 @@ def login():
             flash(f'Welcome back, {user["name"]}! You are signed in as {user["role"].capitalize()}.', 'success')
 
             # Safe open-redirect validation for 'next' parameter
-            if next_page and next_page.startswith('/') and not next_page.startswith('//'):
+            if (next_page and next_page.startswith('/') and not next_page.startswith('//')
+                    and '\\' not in next_page and '://' not in next_page):
                 return redirect(next_page)
 
             # Role-based dashboard routing
@@ -235,6 +434,7 @@ def login():
                 return redirect(url_for('admin_dashboard'))
             return redirect(url_for('dashboard'))
         else:
+            record_login_failure(db, email)
             flash('Invalid email or password. Please verify your credentials and try again.', 'danger')
             return render_template('login.html', email=email, next=next_page)
 
@@ -864,7 +1064,6 @@ if __name__ == '__main__':
     print("=" * 60)
     print("Community Skill-Building Workshop Platform")
     print("Server starting at http://127.0.0.1:5000")
-    print("Default Admin Login: admin@workshop.com / admin123")
-    print("Default Learner Login: learner@workshop.com / learner123")
     print("=" * 60)
-    app.run(debug=True, port=5000)
+    # Debug mode exposes an interactive code console; only enable it explicitly.
+    app.run(debug=os.getenv('FLASK_DEBUG') == '1', port=5000)

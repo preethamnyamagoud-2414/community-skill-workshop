@@ -104,3 +104,11 @@ INSERT OR IGNORE INTO feedback (id, user_id, workshop_id, rating, comments) VALU
 -- Demo Attendance Records (Pre-Marked Present)
 INSERT OR IGNORE INTO attendance (id, enrollment_id, user_id, workshop_id, status) VALUES
 (1, 2, 2, 4, 'Present');
+
+-- Failed sign-in attempts (used to temporarily lock an email after repeated failures)
+CREATE TABLE IF NOT EXISTS login_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    ip_address TEXT,
+    attempted_at TEXT NOT NULL
+);

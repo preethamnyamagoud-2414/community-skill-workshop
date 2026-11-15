@@ -10,6 +10,7 @@
   </div>
 
   <form method="POST" action="{{ url_for('add_workshop') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-group">
       <label for="title" class="form-label">Workshop Title</label>
       <input type="text" id="title" name="title" class="form-control" placeholder="e.g., Introduction to Python & Automation" required autofocus>

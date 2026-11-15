@@ -142,6 +142,7 @@
       </span>
       {% elif w['status'] == 'upcoming' and w['available_seats'] > 0 %}
       <form action="{{ url_for('enroll', workshop_id=w['id']) }}" method="POST" style="flex: 1;">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">
           Enroll Now
         </button>

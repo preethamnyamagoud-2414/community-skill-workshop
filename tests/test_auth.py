@@ -106,7 +106,7 @@ class AuthTestCase(unittest.TestCase):
         self.assertIn(b'Passwords do not match', response.data)
 
     def test_registration_short_password(self):
-        """Test registration rejects passwords shorter than 6 characters."""
+        """Test registration rejects passwords shorter than 8 characters."""
         response = self.client.post('/register', data={
             'name': 'Short Pass',
             'email': 'short@test.com',
@@ -115,7 +115,7 @@ class AuthTestCase(unittest.TestCase):
         }, follow_redirects=True)
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'at least 6 characters long', response.data)
+        self.assertIn(b'at least 8 characters long', response.data)
 
     def test_registration_invalid_email(self):
         """Test registration rejects malformed email addresses."""

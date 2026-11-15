@@ -65,6 +65,7 @@
         </a>
         <form action="{{ url_for('delete_workshop', workshop_id=workshop['id']) }}" method="POST"
           style="display: inline;">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-danger"
             data-confirm="Are you sure you want to permanently delete this workshop?">
             Delete
@@ -82,6 +83,7 @@
             reminders.</small>
         </div>
         <form action="{{ url_for('cancel_enrollment', enrollment_id=enrollment_id) }}" method="POST">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-danger btn-sm"
             data-confirm="Are you sure you want to cancel your seat? This will release your spot to other learners.">
             Cancel Registration
@@ -96,6 +98,7 @@
             Workshop</span>
         </div>
         <form action="{{ url_for('enroll', workshop_id=workshop['id']) }}" method="POST">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1.05rem;">
             Confirm My Seat Registration &rarr;
           </button>

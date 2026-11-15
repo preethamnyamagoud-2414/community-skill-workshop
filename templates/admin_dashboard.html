@@ -244,6 +244,7 @@
                       Edit
                     </a>
                     <form action="{{ url_for('delete_workshop', workshop_id=w['id']) }}" method="POST" style="display: inline;">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button type="submit" class="btn btn-danger btn-sm" data-confirm="Are you sure you want to permanently delete '{{ w['title'] }}'? All associated bookings will be removed.">
                         Delete
                       </button>
@@ -312,6 +313,7 @@
                 <td><small style="color: var(--neutral-500);">{{ fb['created_at'][:10] }}</small></td>
                 <td>
                   <form action="{{ url_for('delete_feedback', feedback_id=fb['id']) }}" method="POST" style="display: inline;">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger btn-sm" data-confirm="Are you sure you want to delete this learner review?">
                       Delete
                     </button>
