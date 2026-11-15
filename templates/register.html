@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Create Learner Account | SkillConnect{% endblock %}
+
+{% block content %}
+<div style="min-height: calc(80vh - 120px); display: flex; align-items: center; justify-content: center; padding: 1.5rem 0;">
+  <div class="form-card" style="width: 100%; max-width: 520px; margin: 0 auto; box-shadow: var(--shadow-xl); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: 2.75rem 2.5rem; background: var(--bg-surface);">
+    
+    <!-- Header Branding -->
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <div class="brand-icon" style="margin: 0 auto 0.85rem; width: 48px; height: 48px; font-size: 1.5rem; border-radius: var(--radius-md);">🌿</div>
+      <h2 style="font-size: 1.85rem; font-weight: 800; color: var(--neutral-900); letter-spacing: -0.025em; margin-bottom: 0.35rem;">Join SkillConnect</h2>
+      <p style="color: var(--neutral-500); font-size: 0.94rem; margin: 0;">Create a free community account to reserve seats in upcoming workshops</p>
+    </div>
+
+    <!-- Registration Form -->
+    <form method="POST" action="{{ url_for('register') }}" novalidate>
+      <div class="form-group">
+        <label for="name" class="form-label">
+          Full Name <span style="color: var(--accent-red);">*</span>
+        </label>
+        <input 
+          type="text" 
+          id="name" 
+          name="name" 
+          class="form-control" 
+          placeholder="e.g. Alex Johnson" 
+          value="{{ name or '' }}" 
+          required 
+          autofocus
+          style="padding: 0.75rem 1rem;"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="email" class="form-label">
+          Email Address <span style="color: var(--accent-red);">*</span>
+        </label>
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          class="form-control" 
+          placeholder="alex@example.com" 
+          value="{{ email or '' }}" 
+          required
+          style="padding: 0.75rem 1rem;"
+        >
+        <small style="color: var(--neutral-400); font-size: 0.8rem; margin-top: 0.25rem; display: block;">We will never share your email address.</small>
+      </div>
+
+      <div class="form-group">
+        <label for="phone" class="form-label">
+          Phone Number <span style="color: var(--neutral-400); font-weight: normal;">(Optional)</span>
+        </label>
+        <input 
+          type="tel" 
+          id="phone" 
+          name="phone" 
+          class="form-control" 
+          placeholder="555-0144" 
+          value="{{ phone or '' }}"
+          style="padding: 0.75rem 1rem;"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">
+          Password <span style="color: var(--accent-red);">*</span>
+        </label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          class="form-control" 
+          placeholder="Minimum 6 characters" 
+          minlength="6" 
+          required
+          style="padding: 0.75rem 1rem;"
+        >
+      </div>
+
+      <div class="form-group" style="margin-bottom: 1.75rem;">
+        <label for="confirm_password" class="form-label">
+          Confirm Password <span style="color: var(--accent-red);">*</span>
+        </label>
+        <input 
+          type="password" 
+          id="confirm_password" 
+          name="confirm_password" 
+          class="form-control" 
+          placeholder="Re-enter your password" 
+          minlength="6" 
+          required
+          style="padding: 0.75rem 1rem;"
+        >
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem; border-radius: var(--radius-md); box-shadow: var(--shadow-md);">
+        Create Free Account &rarr;
+      </button>
+    </form>
+
+    <p style="text-align: center; margin-top: 1.75rem; font-size: 0.92rem; color: var(--neutral-600);">
+      Already registered? 
+      <a href="{{ url_for('login') }}" style="font-weight: 700; color: var(--primary-600);">Sign in to your account</a>
+    </p>
+
+  </div>
+</div>
+{% endblock %}

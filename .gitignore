@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Local SQLite database (recreated automatically from database/schema.sql)
+instance/
+*.db
+
+# Secrets / editor / OS
+.env
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

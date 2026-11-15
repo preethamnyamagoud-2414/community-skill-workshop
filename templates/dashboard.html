@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}Learner Dashboard | SkillConnect{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+  <!-- ====================================================
+       1. MODERN SIDEBAR NAVIGATION
+       ==================================================== -->
+  <aside class="dashboard-sidebar">
+    <div class="sidebar-profile-header">
+      <div class="sidebar-avatar">
+        {{ user['name'][:2].upper() }}
+      </div>
+      <h3 class="sidebar-name">{{ user['name'] }}</h3>
+      <p class="sidebar-email">{{ user['email'] }}</p>
+      <span class="badge badge-primary">Community Learner</span>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li>
+        <a href="#overview" class="sidebar-link active">
+          <span class="sidebar-link-icon">📊</span>
+          <span>Overview</span>
+        </a>
+      </li>
+      <li>
+        <a href="#my-workshops" class="sidebar-link">
+          <span class="sidebar-link-icon">📅</span>
+          <span>Upcoming Sessions</span>
+          {% if upcoming_count > 0 %}
+          <span class="badge badge-success" style="margin-left: auto; font-size: 0.7rem;">{{ upcoming_count }}</span>
+          {% endif %}
+        </a>
+      </li>
+      <li>
+        <a href="#history" class="sidebar-link">
+          <span class="sidebar-link-icon">📜</span>
+          <span>Registration History</span>
+        </a>
+      </li>
+      <li>
+        <a href="#profile" class="sidebar-link">
+          <span class="sidebar-link-icon">👤</span>
+          <span>Profile Details</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('workshops') }}" class="sidebar-link">
+          <span class="sidebar-link-icon">🔍</span>
+          <span>Browse Catalog</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('feedback_page') }}" class="sidebar-link">
+          <span class="sidebar-link-icon">💬</span>
+          <span>My Reviews</span>
+        </a>
+      </li>
+      <li style="border-top: 1px solid var(--neutral-200); margin-top: 0.75rem; padding-top: 0.75rem;">
+        <a href="{{ url_for('logout') }}" class="sidebar-link" style="color: var(--accent-red);">
+          <span class="sidebar-link-icon">🚪</span>
+          <span>Sign Out</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- ====================================================
+       2. MAIN DASHBOARD CONTENT AREA
+       ==================================================== -->
+  <div class="dashboard-main" id="overview">
+    <!-- Welcome Header & Quick Action -->
+    <div
+      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <span class="section-tag">Learner Hub</span>
+        <h1 style="font-size: 2.1rem; font-weight: 800; color: var(--neutral-900); margin-bottom: 0.25rem;">
+          Welcome back, {{ user['name'] }}! 👋
+        </h1>
+        <p style="color: var(--neutral-500); font-size: 0.98rem; margin: 0;">
+          Here is your personalized summary of skill sessions, schedules, and learning milestones.
+        </p>
+      </div>
+      <a href="{{ url_for('workshops') }}" class="btn btn-primary btn-lg">
+        + Browse New Workshops
+      </a>
+    </div>
+
+    <!-- Real Database Statistics Cards -->
+    <div class="grid-stats">
+      <div class="stat-card">
+        <div class="stat-icon">🎟️</div>
+        <div>
+          <div class="stat-value">{{ total_registered }}</div>
+          <div class="stat-label">Total Registered</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #ecfdf5; color: var(--primary-700);">📅</div>
+        <div>
+          <div class="stat-value" style="color: var(--primary-700);">{{ upcoming_count }}</div>
+          <div class="stat-label">Upcoming Workshops</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #eff6ff; color: #2563eb;">🎓</div>
+        <div>
+          <div class="stat-value">{{ completed_count }}</div>
+          <div class="stat-label">Completed Workshops</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #fffbeb; color: #d97706;">⭐</div>
+        <div>
+          <div class="stat-value">{{ feedback_count }}</div>
+          <div class="stat-label">Feedback Shared</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================
+         3. UPCOMING SESSIONS ("MY WORKSHOPS" SECTION)
+         ==================================================== -->
+    <div class="card" style="margin-bottom: 2.5rem; padding: 1.75rem;" id="my-workshops">
+      <div
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--neutral-900);">
+            Upcoming Sessions &mdash; Your Registered Workshops
+          </h2>
+          <p style="color: var(--neutral-500); font-size: 0.88rem; margin: 0;">
+            Workshops you have reserved a seat for. Make sure to arrive on time!
+          </p>
+        </div>
+        <a href="{{ url_for('my_workshops') }}" class="btn btn-secondary btn-sm">Full Schedule &rarr;</a>
+      </div>
+
+      {% if upcoming_workshops %}
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        {% for w in upcoming_workshops %}
+        <div
+          style="background: var(--neutral-50); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div style="flex: 2; min-width: 250px;">
+            <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.35rem;">
+              <span class="badge badge-primary">{{ w['category'] }}</span>
+              <span class="badge badge-success">Seat Confirmed ✓</span>
+            </div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 0.35rem;">
+              <a href="{{ url_for('workshop_details', workshop_id=w['workshop_id']) }}">
+                {{ w['title'] }}
+              </a>
+            </h3>
+            <div style="font-size: 0.88rem; color: var(--neutral-600); display: flex; gap: 1.25rem; flex-wrap: wrap;">
+              <span><strong>👤 Trainer:</strong> {{ w['trainer_name'] }}</span>
+              <span><strong>📅 Date:</strong> {{ w['workshop_date'] }} ({{ w['workshop_time'] }})</span>
+              <span><strong>📍 Location:</strong> {{ w['venue'] }}</span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <a href="{{ url_for('workshop_details', workshop_id=w['workshop_id']) }}" class="btn btn-secondary btn-sm">
+              View Details
+            </a>
+            <form action="{{ url_for('cancel_enrollment', enrollment_id=w['enrollment_id']) }}" method="POST">
+              <button type="submit" class="btn btn-danger btn-sm"
+                data-confirm="Are you sure you want to cancel your seat for '{{ w['title'] }}'?">
+                Cancel Seat
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div
+        style="text-align: center; padding: 2.5rem 1rem; background: var(--neutral-50); border-radius: var(--radius-md);">
+        <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">📅</div>
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--neutral-800); margin-bottom: 0.35rem;">
+          No Upcoming Workshops Scheduled
+        </h3>
+        <p style="color: var(--neutral-500); font-size: 0.92rem; max-width: 440px; margin: 0 auto 1.25rem;">
+          You have not registered for any upcoming sessions. Explore our catalog to find an exciting skill to learn.
+        </p>
+        <a href="{{ url_for('workshops') }}" class="btn btn-primary">Browse Available Workshops</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ====================================================
+         4. REGISTRATION HISTORY SECTION
+         ==================================================== -->
+    <div class="card" style="margin-bottom: 2.5rem; padding: 1.75rem;" id="history">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--neutral-900);">
+            Workshop Registration History
+          </h2>
+          <p style="color: var(--neutral-500); font-size: 0.88rem; margin: 0;">
+            A complete chronological log of all your workshop bookings and attendance.
+          </p>
+        </div>
+        <span class="badge badge-secondary">{{ enrollments|length }} Records</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Workshop Title</th>
+              <th>Category</th>
+              <th>Trainer</th>
+              <th>Date & Venue</th>
+              <th>Enrolled On</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in enrollments %}
+            <tr>
+              <td>
+                <a href="{{ url_for('workshop_details', workshop_id=e['workshop_id']) }}"
+                  style="font-weight: 700; color: var(--neutral-900);">
+                  {{ e['title'] }}
+                </a>
+              </td>
+              <td><span class="badge badge-primary">{{ e['category'] }}</span></td>
+              <td>{{ e['trainer_name'] }}</td>
+              <td>
+                {{ e['workshop_date'] }}<br>
+                <small style="color: var(--neutral-500);">{{ e['venue'] }}</small>
+              </td>
+              <td><small style="color: var(--neutral-500);">{{ e['enrollment_date'][:10] }}</small></td>
+              <td>
+                {% if e['status'] == 'confirmed' %}
+                <span class="badge badge-success">Enrolled</span>
+                {% elif e['status'] == 'attended' %}
+                <span class="badge badge-primary">Attended ✓</span>
+                {% else %}
+                <span class="badge badge-danger">Cancelled</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if e['status'] == 'attended' %}
+                <a href="{{ url_for('feedback_page', workshop_id=e['workshop_id']) }}" class="btn btn-outline btn-sm">
+                  Leave Review
+                </a>
+                {% else %}
+                <a href="{{ url_for('workshop_details', workshop_id=e['workshop_id']) }}"
+                  class="btn btn-secondary btn-sm">
+                  View
+                </a>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--neutral-500);">
+                No registration history found. Your workshop enrollments will appear here.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ====================================================
+         5. PROFILE INFORMATION CARD
+         ==================================================== -->
+    <div class="card" style="margin-bottom: 2.5rem; padding: 1.75rem;" id="profile">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--neutral-900);">
+            Profile Information
+          </h2>
+          <p style="color: var(--neutral-500); font-size: 0.88rem; margin: 0;">
+            Personal account data and community membership details.
+          </p>
+        </div>
+        <span class="badge badge-success">Active Member</span>
+      </div>
+
+      <div class="profile-info-grid">
+        <div class="profile-field-box">
+          <div class="profile-field-label">Full Name</div>
+          <div class="profile-field-value">{{ user['name'] }}</div>
+        </div>
+
+        <div class="profile-field-box">
+          <div class="profile-field-label">Registered Email</div>
+          <div class="profile-field-value">{{ user['email'] }}</div>
+        </div>
+
+        <div class="profile-field-box">
+          <div class="profile-field-label">Phone Contact</div>
+          <div class="profile-field-value">{{ user['phone'] or 'Not Provided' }}</div>
+        </div>
+
+        <div class="profile-field-box">
+          <div class="profile-field-label">Account Role</div>
+          <div class="profile-field-value" style="color: var(--primary-700);">
+            {{ user['role']|capitalize }}
+          </div>
+        </div>
+
+        <div class="profile-field-box">
+          <div class="profile-field-label">Member Since</div>
+          <div class="profile-field-value">
+            {{ user['created_at'][:10] if user['created_at'] else '2026' }}
+          </div>
+        </div>
+
+        <div class="profile-field-box">
+          <div class="profile-field-label">Security Status</div>
+          <div class="profile-field-value" style="color: var(--primary-700); font-size: 0.95rem;">
+            ✓ Password Protected (PBKDF2)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================
+         6. RECOMMENDED WORKSHOPS (QUICK DISCOVERY)
+         ==================================================== -->
+    {% if recommended_workshops %}
+    <div class="card" style="padding: 1.75rem; background: var(--primary-50); border-color: var(--primary-200);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <div>
+          <span class="section-tag" style="background: var(--neutral-white);">Recommended For You</span>
+          <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--primary-800); margin: 0.25rem 0 0;">
+            Expand Your Skills
+          </h3>
+        </div>
+        <a href="{{ url_for('workshops') }}" class="btn btn-secondary btn-sm">Explore All &rarr;</a>
+      </div>
+
+      <div class="grid-3">
+        {% for rw in recommended_workshops %}
+        <div class="card" style="background: var(--neutral-white); border-color: var(--primary-200); padding: 1.25rem;">
+          <span class="badge badge-primary" style="margin-bottom: 0.5rem;">{{ rw['category'] }}</span>
+          <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--neutral-900);">
+            <a href="{{ url_for('workshop_details', workshop_id=rw['id']) }}">
+              {{ rw['title'] }}
+            </a>
+          </h4>
+          <p style="font-size: 0.85rem; color: var(--neutral-500); margin-bottom: 0.75rem;">
+            📅 {{ rw['workshop_date'] }} • <strong>{{ rw['available_seats'] }}</strong> seats left
+          </p>
+          <form action="{{ url_for('enroll', workshop_id=rw['id']) }}" method="POST">
+            <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">
+              Enroll Now
+            </button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

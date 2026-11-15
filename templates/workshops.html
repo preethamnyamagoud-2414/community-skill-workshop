@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Browse All Workshops | SkillConnect{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <span class="section-tag">Learning Catalog</span>
+      <h1 style="font-size: 2.2rem; font-weight: 800; color: var(--neutral-900); margin-bottom: 0.35rem;">
+        Available Skill Workshops
+      </h1>
+      <p style="color: var(--neutral-500); font-size: 1rem;">
+        Discover interactive sessions, meet local mentors, and reserve your seat.
+      </p>
+    </div>
+    {% if session.get('role') == 'admin' %}
+    <a href="{{ url_for('add_workshop') }}" class="btn btn-primary">+ Add New Workshop</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Search & Filtering Toolbar -->
+<div class="card" style="margin-bottom: 2.5rem; padding: 1.5rem; background: var(--neutral-white);">
+  <form method="GET" action="{{ url_for('workshops') }}"
+    style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+    <!-- Search Box -->
+    <div style="flex: 2; min-width: 260px;">
+      <label for="workshopSearch" class="form-label"
+        style="font-size: 0.85rem; color: var(--neutral-600); margin-bottom: 0.25rem;">
+        Search by Keyword or Trainer
+      </label>
+      <input type="text" id="workshopSearch" name="q" class="form-control"
+        placeholder="🔍 Type a skill, title or trainer name..." value="{{ search_query or '' }}">
+    </div>
+
+    <!-- Category Dropdown -->
+    <div style="flex: 1; min-width: 200px;">
+      <label for="categoryFilter" class="form-label"
+        style="font-size: 0.85rem; color: var(--neutral-600); margin-bottom: 0.25rem;">
+        Filter by Category
+      </label>
+      <select id="categoryFilter" name="cat" class="form-control">
+        <option value="all">All Categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat }}" {% if selected_category|lower==cat|lower %}selected{% endif %}>
+          {{ cat }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Filter Action Buttons -->
+    <div style="display: flex; gap: 0.5rem; align-self: flex-end;">
+      <button type="submit" class="btn btn-primary" style="padding: 0.7rem 1.25rem;">Filter</button>
+      {% if search_query or (selected_category and selected_category != 'all') %}
+      <a href="{{ url_for('workshops') }}" class="btn btn-secondary" style="padding: 0.7rem 1rem;">Reset</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Empty State Message for Client-side or Server-side Filter -->
+<div id="noResultsMsg"
+  style="display: {% if not workshops %}block{% else %}none{% endif %}; text-align: center; padding: 3.5rem 1.5rem;"
+  class="card">
+  <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🔍</div>
+  <h3 style="font-size: 1.3rem; font-weight: 700; color: var(--neutral-800); margin-bottom: 0.5rem;">No Workshops Found
+  </h3>
+  <p style="color: var(--neutral-500); max-width: 480px; margin: 0 auto 1.5rem;">
+    We couldn't find any workshops matching your search criteria. Try using different keywords or resetting filters.
+  </p>
+  <a href="{{ url_for('workshops') }}" class="btn btn-secondary">Clear All Filters</a>
+</div>
+
+<!-- Workshop Catalog Grid -->
+<div class="grid-3" id="workshopGrid">
+  {% for w in workshops %}
+  <div class="card workshop-card" data-title="{{ w['title'] }}" data-trainer="{{ w['trainer_name'] }}"
+    data-category="{{ w['category'] }}">
+
+    <div class="workshop-card-body">
+      <!-- Header: Category & Capacity Badges -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.85rem;">
+        <span class="badge badge-primary">{{ w['category'] }}</span>
+
+        {% if w['status'] == 'completed' %}
+        <span class="badge badge-secondary">Completed</span>
+        {% elif w['status'] == 'cancelled' %}
+        <span class="badge badge-danger">Cancelled</span>
+        {% elif w['available_seats'] > 0 %}
+        <span class="badge badge-success">{{ w['available_seats'] }} of {{ w['total_seats'] }} seats left</span>
+        {% else %}
+        <span class="badge badge-danger">Fully Booked</span>
+        {% endif %}
+      </div>
+
+      <!-- Title & Workshop ID -->
+      <div style="font-size: 0.75rem; color: var(--neutral-400); font-weight: 700; margin-bottom: 0.2rem;">
+        WORKSHOP #{{ w['id'] }}
+      </div>
+
+      <h3
+        style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.65rem; color: var(--neutral-900); line-height: 1.35;">
+        <a href="{{ url_for('workshop_details', workshop_id=w['id']) }}" style="color: inherit;">
+          {{ w['title'] }}
+        </a>
+      </h3>
+
+      <!-- Description -->
+      <p style="color: var(--neutral-500); font-size: 0.92rem; margin-bottom: 1.25rem; line-height: 1.55;">
+        {{ w['description'][:130] }}{% if w['description']|length > 130 %}...{% endif %}
+      </p>
+
+      <!-- Detailed Logistics -->
+      <div
+        style="font-size: 0.88rem; color: var(--neutral-600); margin-bottom: 1.25rem; border-top: 1px dashed var(--border-color); padding-top: 0.85rem; display: flex; flex-direction: column; gap: 0.4rem;">
+        <div><strong>👤 Trainer:</strong> {{ w['trainer_name'] }}</div>
+        <div><strong>📅 Date:</strong> {{ w['workshop_date'] }} ({{ w['workshop_time'] }})</div>
+        <div><strong>📍 Location:</strong> {{ w['venue'] }}</div>
+        <div><strong>🎟️ Seats:</strong> <strong>{{ w['available_seats'] }}</strong> available / {{ w['total_seats'] }}
+          total</div>
+      </div>
+    </div>
+
+    <!-- Action Footer -->
+    <div style="display: flex; gap: 0.5rem; border-top: 1px solid var(--neutral-100); padding-top: 1rem;">
+      <a href="{{ url_for('workshop_details', workshop_id=w['id']) }}" class="btn btn-secondary btn-sm"
+        style="flex: 1;">
+        Details
+      </a>
+
+      {% if session.get('role') == 'admin' %}
+      <a href="{{ url_for('edit_workshop', workshop_id=w['id']) }}" class="btn btn-outline btn-sm" style="flex: 1;">
+        Edit
+      </a>
+      {% elif session.get('user_id') and session.get('role') == 'learner' %}
+      {% if w['id'] in user_enrolled_ids %}
+      <span class="btn btn-secondary btn-sm"
+        style="flex: 1; cursor: default; background: var(--primary-50); color: var(--primary-700); border-color: var(--primary-200);">
+        ✓ Enrolled
+      </span>
+      {% elif w['status'] == 'upcoming' and w['available_seats'] > 0 %}
+      <form action="{{ url_for('enroll', workshop_id=w['id']) }}" method="POST" style="flex: 1;">
+        <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">
+          Enroll Now
+        </button>
+      </form>
+      {% elif w['available_seats'] <= 0 %} <button class="btn btn-secondary btn-sm"
+        style="flex: 1; opacity: 0.6; cursor: not-allowed;" disabled>
+        Full
+        </button>
+        {% endif %}
+        {% elif not session.get('user_id') and w['status'] == 'upcoming' and w['available_seats'] > 0 %}
+        <a href="{{ url_for('login', next=url_for('workshop_details', workshop_id=w['id'])) }}"
+          class="btn btn-primary btn-sm" style="flex: 1;">
+          Login to Enroll
+        </a>
+        {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}{{ workshop['title'] }} | SkillConnect{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+  <a href="{{ url_for('workshops') }}" style="color: var(--neutral-500); font-size: 0.95rem; font-weight: 500;">
+    &larr; Back to All Workshops
+  </a>
+  <span style="font-size: 0.85rem; color: var(--neutral-400); font-weight: 700;">
+    WORKSHOP ID: #{{ workshop['id'] }}
+  </span>
+</div>
+
+<div class="grid-2" style="align-items: start;">
+  <!-- Main Details Column -->
+  <div class="card">
+    <!-- Header Badges -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+      <span class="badge badge-primary">{{ workshop['category'] }}</span>
+      {% if workshop['status'] == 'completed' %}
+      <span class="badge badge-secondary">Completed</span>
+      {% elif workshop['status'] == 'cancelled' %}
+      <span class="badge badge-danger">Cancelled</span>
+      {% elif workshop['available_seats'] > 0 %}
+      <span class="badge badge-success">{{ workshop['available_seats'] }} of {{ workshop['total_seats'] }} seats
+        available</span>
+      {% else %}
+      <span class="badge badge-danger">Fully Booked</span>
+      {% endif %}
+    </div>
+
+    <!-- Title -->
+    <h1
+      style="font-size: 2.2rem; font-weight: 800; margin-bottom: 1.25rem; color: var(--neutral-900); line-height: 1.25;">
+      {{ workshop['title'] }}
+    </h1>
+
+    <!-- Description -->
+    <div style="margin-bottom: 2rem;">
+      <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--neutral-800); margin-bottom: 0.75rem;">
+        About This Workshop
+      </h3>
+      <p style="color: var(--neutral-600); line-height: 1.75; font-size: 1rem; white-space: pre-line;">
+        {{ workshop['description'] }}
+      </p>
+    </div>
+
+    <!-- Interactive Registration / Admin Action Box -->
+    <div
+      style="background: var(--neutral-50); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.5rem;">
+      {% if session.get('role') == 'admin' %}
+      <div style="margin-bottom: 1rem;">
+        <h4 style="font-size: 1rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 0.25rem;">Administrator
+          Actions</h4>
+        <p style="font-size: 0.85rem; color: var(--neutral-500); margin: 0;">Manage workshop details, capacity, or
+          participant attendance.</p>
+      </div>
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <a href="{{ url_for('edit_workshop', workshop_id=workshop['id']) }}" class="btn btn-primary" style="flex: 1;">
+          Edit Workshop
+        </a>
+        <a href="{{ url_for('participants', workshop_id=workshop['id']) }}" class="btn btn-secondary" style="flex: 1;">
+          View Attendee Roster
+        </a>
+        <form action="{{ url_for('delete_workshop', workshop_id=workshop['id']) }}" method="POST"
+          style="display: inline;">
+          <button type="submit" class="btn btn-danger"
+            data-confirm="Are you sure you want to permanently delete this workshop?">
+            Delete
+          </button>
+        </form>
+      </div>
+      {% elif session.get('user_id') and session.get('role') == 'learner' %}
+      {% if is_enrolled %}
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: gap; gap: 1rem;">
+        <div>
+          <span style="font-weight: 700; color: var(--primary-700); font-size: 1rem; display: block;">
+            ✓ You are enrolled in this workshop
+          </span>
+          <small style="color: var(--neutral-500);">Your seat is confirmed. Check your email for venue
+            reminders.</small>
+        </div>
+        <form action="{{ url_for('cancel_enrollment', enrollment_id=enrollment_id) }}" method="POST">
+          <button type="submit" class="btn btn-danger btn-sm"
+            data-confirm="Are you sure you want to cancel your seat? This will release your spot to other learners.">
+            Cancel Registration
+          </button>
+        </form>
+      </div>
+      {% elif workshop['status'] == 'upcoming' and workshop['available_seats'] > 0 %}
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <span style="font-weight: 700; color: var(--neutral-800);">Reserve Your Seat</span>
+          <span style="font-size: 0.88rem; color: var(--primary-700); font-weight: 600;">100% Free Community
+            Workshop</span>
+        </div>
+        <form action="{{ url_for('enroll', workshop_id=workshop['id']) }}" method="POST">
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1.05rem;">
+            Confirm My Seat Registration &rarr;
+          </button>
+        </form>
+      </div>
+      {% elif workshop['available_seats'] <= 0 %} <div style="text-align: center; padding: 0.5rem 0;">
+        <span class="badge badge-danger" style="margin-bottom: 0.5rem; font-size: 0.85rem;">Registration Closed</span>
+        <p style="color: var(--neutral-600); font-weight: 600; margin: 0;">
+          Sorry, all {{ workshop['total_seats'] }} seats for this session are fully booked.
+        </p>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 0.5rem 0;">
+      <p style="color: var(--neutral-500); margin: 0;">
+        This workshop is {{ workshop['status'] }} and is not accepting registrations.
+      </p>
+    </div>
+    {% endif %}
+    {% else %}
+    <div style="text-align: center; padding: 0.5rem 0;">
+      <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 0.35rem;">
+        Ready to Build This Skill?
+      </h4>
+      <p style="color: var(--neutral-500); font-size: 0.92rem; margin-bottom: 1rem;">
+        Create a free learner account or sign in to register for this session.
+      </p>
+      <div style="display: flex; justify-content: center; gap: 0.75rem;">
+        <a href="{{ url_for('login', next=url_for('workshop_details', workshop_id=workshop['id'])) }}"
+          class="btn btn-primary">
+          Login to Register
+        </a>
+        <a href="{{ url_for('register') }}" class="btn btn-secondary">
+          Create Account
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Sidebar Column: Logistics & Reviews -->
+<div>
+  <!-- Logistics Card -->
+  <div class="card" style="margin-bottom: 2rem;">
+    <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 1.25rem;">
+      Workshop Logistics
+    </h3>
+    <div style="display: flex; flex-direction: column; gap: 1rem; font-size: 0.95rem;">
+      <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+        <span style="font-size: 1.3rem;">👤</span>
+        <div>
+          <strong style="color: var(--neutral-900);">Lead Trainer</strong>
+          <p style="color: var(--neutral-600); margin: 0;">{{ workshop['trainer_name'] }}</p>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+        <span style="font-size: 1.3rem;">📅</span>
+        <div>
+          <strong style="color: var(--neutral-900);">Date & Schedule</strong>
+          <p style="color: var(--neutral-600); margin: 0;">{{ workshop['workshop_date'] }}</p>
+          <small style="color: var(--neutral-500);">{{ workshop['workshop_time'] }}</small>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+        <span style="font-size: 1.3rem;">📍</span>
+        <div>
+          <strong style="color: var(--neutral-900);">Location / Venue</strong>
+          <p style="color: var(--neutral-600); margin: 0;">{{ workshop['venue'] }}</p>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+        <span style="font-size: 1.3rem;">🎟️</span>
+        <div>
+          <strong style="color: var(--neutral-900);">Capacity & Availability</strong>
+          <p style="color: var(--neutral-600); margin: 0;">
+            <strong>{{ workshop['available_seats'] }}</strong> seats available of {{ workshop['total_seats'] }} total
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendee Reviews Card -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+      <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--neutral-900); margin: 0;">
+        Attendee Reviews
+      </h3>
+      {% if is_enrolled %}
+      <a href="{{ url_for('feedback_page', workshop_id=workshop['id']) }}" class="btn btn-outline btn-sm">
+        Leave / Edit Review
+      </a>
+      {% endif %}
+    </div>
+
+    {% for fb in feedback_list %}
+    <div style="border-bottom: 1px solid var(--border-color); padding: 0.85rem 0;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.25rem;">
+        <strong style="color: var(--neutral-900);">{{ fb['user_name'] }}</strong>
+        <span style="color: var(--accent-gold); font-weight: 700;">
+          {% for i in range(fb['rating']) %}★{% endfor %}
+          {% for i in range(5 - fb['rating']) %}☆{% endfor %}
+        </span>
+      </div>
+      <p style="font-size: 0.88rem; color: var(--neutral-600); margin: 0; line-height: 1.5;">
+        "{{ fb['comments'] }}"
+      </p>
+    </div>
+    {% else %}
+    <p style="color: var(--neutral-500); font-size: 0.9rem; text-align: center; padding: 1.5rem 0;">
+      No reviews yet for this workshop.
+    </p>
+    {% endfor %}
+  </div>
+</div>
+</div>
+{% endblock %}

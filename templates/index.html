@@ -1,0 +1,535 @@
+{% extends "base.html" %}
+
+{% block title %}SkillConnect | Community Skill-Building Workshops{% endblock %}
+
+{% block content %}
+<!-- ====================================================
+     1. HERO SECTION
+     ==================================================== -->
+<section class="hero-section">
+  <div style="position: relative; z-index: 2;">
+    <div class="hero-pill">
+      <span>🌱</span> Empowering Communities Through Lifelong Learning
+    </div>
+
+    <h1 class="hero-title">Learn New Skills.<br>Build a Better Future.</h1>
+
+    <p class="hero-subtitle">
+      SkillConnect is a community-driven learning hub that unites curious learners with certified local mentors, industry professionals, and master tradespeople. Master high-impact practical skills through small-group, interactive workshops designed to fit your busy life.
+    </p>
+
+    <div class="hero-actions">
+      <a href="{{ url_for('workshops') }}" class="btn btn-primary btn-lg" style="background: #ffffff; color: var(--primary-800); font-weight: 700; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+        Explore Workshops &rarr;
+      </a>
+      <a href="#how-it-works" class="btn btn-outline btn-lg" style="border-color: rgba(255,255,255,0.7); color: #ffffff;">
+        How It Works
+      </a>
+    </div>
+
+    <!-- Quick Stats Metric Bar -->
+    <div class="hero-stats-bar">
+      <div class="hero-stat-item">
+        <div class="hero-stat-num">{{ total_workshops or 12 }}+</div>
+        <div class="hero-stat-desc">Scheduled Workshops</div>
+      </div>
+      <div class="hero-stat-item">
+        <div class="hero-stat-num">{{ total_learners or 250 }}+</div>
+        <div class="hero-stat-desc">Enrolled Community Learners</div>
+      </div>
+      <div class="hero-stat-item">
+        <div class="hero-stat-num">98%</div>
+        <div class="hero-stat-desc">Satisfaction Rating</div>
+      </div>
+      <div class="hero-stat-item">
+        <div class="hero-stat-num">100% Free</div>
+        <div class="hero-stat-desc">Accessible Community Sessions</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================
+     2. POPULAR SKILL CATEGORIES
+     ==================================================== -->
+<section class="section-wrapper" id="categories">
+  <div class="section-header">
+    <span class="section-tag">Find Your Path</span>
+    <h2 class="section-title">Popular Skill Categories</h2>
+    <p class="section-subtitle">
+      Choose from our curated streams of practical, future-ready skills taught by experienced local practitioners.
+    </p>
+  </div>
+
+  <div class="category-grid">
+    <!-- Category 1: Technology -->
+    <a href="{{ url_for('workshops') }}?cat=Technology" class="category-card">
+      <div class="category-icon-box">💻</div>
+      <h3 class="category-name">Technology</h3>
+      <p class="category-desc">Web development, Python scripting, digital literacy, and basic automation.</p>
+    </a>
+
+    <!-- Category 2: Communication -->
+    <a href="{{ url_for('workshops') }}?cat=Communication" class="category-card">
+      <div class="category-icon-box">🗣️</div>
+      <h3 class="category-name">Communication</h3>
+      <p class="category-desc">Public speaking, conflict resolution, pitch delivery, and interpersonal skills.</p>
+    </a>
+
+    <!-- Category 3: Business -->
+    <a href="{{ url_for('workshops') }}?cat=Business" class="category-card">
+      <div class="category-icon-box">📈</div>
+      <h3 class="category-name">Business</h3>
+      <p class="category-desc">Personal budgeting, freelancing, small enterprise marketing, and accounting basics.</p>
+    </a>
+
+    <!-- Category 4: Creative Skills -->
+    <a href="{{ url_for('workshops') }}?cat=Creative" class="category-card">
+      <div class="category-icon-box">🎨</div>
+      <h3 class="category-name">Creative Skills</h3>
+      <p class="category-desc">Woodworking, graphic design, photography, pottery, and culinary arts.</p>
+    </a>
+
+    <!-- Category 5: Personal Development -->
+    <a href="{{ url_for('workshops') }}?cat=Personal" class="category-card">
+      <div class="category-icon-box">🚀</div>
+      <h3 class="category-name">Personal Development</h3>
+      <p class="category-desc">Time management, leadership fundamentals, problem solving, and goal setting.</p>
+    </a>
+  </div>
+</section>
+
+<!-- ====================================================
+     3. FEATURED WORKSHOPS SECTION
+     ==================================================== -->
+<section class="section-wrapper" id="featured-workshops">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <span class="section-tag">Upcoming Sessions</span>
+      <h2 class="section-title" style="margin-bottom: 0.25rem;">Featured Workshops</h2>
+      <p class="section-subtitle">Seats are limited to ensure personalized, small-group attention.</p>
+    </div>
+    <a href="{{ url_for('workshops') }}" class="btn btn-secondary">
+      View All Workshops ({{ total_workshops or 4 }}) &rarr;
+    </a>
+  </div>
+
+  <div class="grid-3">
+    {% for w in featured_workshops %}
+      <div class="card workshop-card">
+        <div class="workshop-card-body">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.85rem;">
+            <span class="badge badge-primary">{{ w['category'] }}</span>
+            {% if w['available_seats'] > 0 %}
+              <span class="badge badge-success">{{ w['available_seats'] }} seats left</span>
+            {% else %}
+              <span class="badge badge-danger">Fully Booked</span>
+            {% endif %}
+          </div>
+
+          <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.6rem;">
+            <a href="{{ url_for('workshop_details', workshop_id=w['id']) }}" style="color: var(--neutral-900);">
+              {{ w['title'] }}
+            </a>
+          </h3>
+
+          <p style="color: var(--neutral-500); font-size: 0.92rem; margin-bottom: 1.25rem; line-height: 1.55;">
+            {{ w['description'][:115] }}{% if w['description']|length > 115 %}...{% endif %}
+          </p>
+
+          <div style="font-size: 0.85rem; color: var(--neutral-600); margin-bottom: 1.25rem; border-top: 1px dashed var(--border-color); padding-top: 0.85rem; display: flex; flex-direction: column; gap: 0.35rem;">
+            <div><strong>👤 Trainer:</strong> {{ w['trainer_name'] }}</div>
+            <div><strong>📅 Date:</strong> {{ w['workshop_date'] }} ({{ w['workshop_time'] }})</div>
+            <div><strong>📍 Venue:</strong> {{ w['venue'] }}</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; border-top: 1px solid var(--neutral-100); padding-top: 1rem;">
+          <a href="{{ url_for('workshop_details', workshop_id=w['id']) }}" class="btn btn-secondary btn-sm" style="flex: 1;">
+            View Details
+          </a>
+          {% if session.get('user_id') and session.get('role') == 'learner' and w['available_seats'] > 0 %}
+            <form action="{{ url_for('enroll', workshop_id=w['id']) }}" method="POST" style="flex: 1;">
+              <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">Enroll Now</button>
+            </form>
+          {% elif not session.get('user_id') and w['available_seats'] > 0 %}
+            <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm" style="flex: 1;">Login to Enroll</a>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+        <p style="color: var(--neutral-500); font-size: 1.1rem;">No workshops currently scheduled. Please check back shortly!</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ====================================================
+     4. HOW IT WORKS SECTION
+     ==================================================== -->
+<section class="section-wrapper" id="how-it-works">
+  <div class="section-header">
+    <span class="section-tag">Simple & Seamless</span>
+    <h2 class="section-title">How SkillConnect Works</h2>
+    <p class="section-subtitle">
+      From discovering your next passion to mastering it in practice, we have made the learning process straightforward.
+    </p>
+  </div>
+
+  <div class="grid-4">
+    <!-- Step 1 -->
+    <div class="step-card">
+      <span class="step-number">01</span>
+      <div class="step-icon">🔍</div>
+      <h3 class="step-title">Discover Sessions</h3>
+      <p class="step-desc">
+        Browse upcoming workshops across technology, crafts, communication, and business filtered by your interest.
+      </p>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-card">
+      <span class="step-number">02</span>
+      <div class="step-icon">🎟️</div>
+      <h3 class="step-title">1-Click Booking</h3>
+      <p class="step-desc">
+        Create a free account and reserve your seat instantly. You'll receive real-time schedule and venue updates.
+      </p>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-card">
+      <span class="step-number">03</span>
+      <div class="step-icon">🛠️</div>
+      <h3 class="step-title">Learn Hands-On</h3>
+      <p class="step-desc">
+        Attend in-person or live interactive workshops. Work on real projects with guidance from skilled mentors.
+      </p>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step-card">
+      <span class="step-number">04</span>
+      <div class="step-icon">⭐</div>
+      <h3 class="step-title">Grow & Review</h3>
+      <p class="step-desc">
+        Apply your new skills immediately, connect with peers, and share feedback to help shape future workshops.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================
+     5. BENEFITS OF JOINING WORKSHOPS
+     ==================================================== -->
+<section class="section-wrapper" id="benefits">
+  <div class="section-header">
+    <span class="section-tag">Why Join Us</span>
+    <h2 class="section-title">Benefits of Joining Workshops</h2>
+    <p class="section-subtitle">
+      Why thousands of community members choose SkillConnect to build practical competence.
+    </p>
+  </div>
+
+  <div class="grid-3">
+    <!-- Benefit 1 -->
+    <div class="benefit-card">
+      <div class="benefit-icon-wrapper">🎯</div>
+      <div>
+        <h3 class="benefit-title">Practical, Hands-On Focus</h3>
+        <p class="benefit-desc">
+          Forget boring lectures. Every session is focused on building tangible projects and practicing actionable skills.
+        </p>
+      </div>
+    </div>
+
+    <!-- Benefit 2 -->
+    <div class="benefit-card">
+      <div class="benefit-icon-wrapper">🧑‍🏫</div>
+      <div>
+        <h3 class="benefit-title">Experienced Local Trainers</h3>
+        <p class="benefit-desc">
+          Learn from passionate local tradespeople, industry professionals, and educators who love sharing their craft.
+        </p>
+      </div>
+    </div>
+
+    <!-- Benefit 3 -->
+    <div class="benefit-card">
+      <div class="benefit-icon-wrapper">🤝</div>
+      <div>
+        <h3 class="benefit-title">Community Networking</h3>
+        <p class="benefit-desc">
+          Meet like-minded neighbours, form study circles, find project partners, and grow your local network.
+        </p>
+      </div>
+    </div>
+
+    <!-- Benefit 4 -->
+    <div class="benefit-card">
+      <div class="benefit-icon-wrapper">💰</div>
+      <div>
+        <h3 class="benefit-title">Zero Financial Barrier</h3>
+        <p class="benefit-desc">
+          Our workshops are community-funded and 100% free or low-cost, ensuring equal access to quality education.
+        </p>
+      </div>
+    </div>
+
+    <!-- Benefit 5 -->
+    <div class="benefit-card">
+      <div class="benefit-icon-wrapper">⏰</div>
+      <div>
+        <h3 class="benefit-title">Flexible Schedule</h3>
+        <p class="benefit-desc">
+          Workshops are offered during evenings and weekends to comfortably fit around student and work commitments.
+        </p>
+      </div>
+    </div>
+
+    <!-- Benefit 6 -->
+    <div class="benefit-card">
+      <div class="benefit-icon-wrapper">📜</div>
+      <div>
+        <h3 class="benefit-title">Participation Records</h3>
+        <p class="benefit-desc">
+          Track attended sessions in your personal dashboard, ideal for updating your resume or professional profile.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================
+     6. TESTIMONIALS SECTION (With Clearly Labeled Sample Content)
+     ==================================================== -->
+<section class="section-wrapper" id="testimonials">
+  <div class="section-header">
+    <span class="section-tag">Community Voices</span>
+    <h2 class="section-title">What Our Community Members Say</h2>
+    <p class="section-subtitle">
+      Real feedback from learners who gained new capabilities and confidence through our workshops.
+    </p>
+  </div>
+
+  <div class="grid-3">
+    <!-- Testimonial 1 -->
+    <div class="testimonial-card">
+      <div>
+        <div style="color: var(--accent-gold); font-size: 1.1rem; margin-bottom: 0.75rem;">
+          ★★★★★
+        </div>
+        <p class="testimonial-quote">
+          "The Web Development workshop gave me the exact foundation I needed. Sarah explained responsive CSS in such a straightforward way that I built my first freelance portfolio website three weeks later!"
+        </p>
+      </div>
+
+      <div class="testimonial-user">
+        <div class="user-avatar">PS</div>
+        <div>
+          <div class="user-info-name">
+            Priya Sharma
+            <span class="sample-badge">Sample Review</span>
+          </div>
+          <div class="user-info-role">Web Development Attendee • Tech Category</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Testimonial 2 -->
+    <div class="testimonial-card">
+      <div>
+        <div style="color: var(--accent-gold); font-size: 1.1rem; margin-bottom: 0.75rem;">
+          ★★★★★
+        </div>
+        <p class="testimonial-quote">
+          "As someone who stares at a screen all day, spending Saturday morning learning hands-on woodworking was deeply grounding. David is a patient mentor who prioritizes safety and precision."
+        </p>
+      </div>
+
+      <div class="testimonial-user">
+        <div class="user-avatar" style="background: linear-gradient(135deg, #059669, #065f46);">DM</div>
+        <div>
+          <div class="user-info-name">
+            David Miller
+            <span class="sample-badge">Sample Review</span>
+          </div>
+          <div class="user-info-role">Basic Woodworking Attendee • Crafts Category</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Testimonial 3 -->
+    <div class="testimonial-card">
+      <div>
+        <div style="color: var(--accent-gold); font-size: 1.1rem; margin-bottom: 0.75rem;">
+          ★★★★★
+        </div>
+        <p class="testimonial-quote">
+          "Elena's personal finance and budgeting workshop was transformative. She stripped away confusing financial jargon and gave us simple spreadsheets that I still use every single month."
+        </p>
+      </div>
+
+      <div class="testimonial-user">
+        <div class="user-avatar" style="background: linear-gradient(135deg, #10b981, #047857);">AK</div>
+        <div>
+          <div class="user-info-name">
+            Aisha Khan
+            <span class="sample-badge">Sample Review</span>
+          </div>
+          <div class="user-info-role">Financial Literacy Attendee • Business Category</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================
+     7. ABOUT SECTION
+     ==================================================== -->
+<section class="section-wrapper" id="about">
+  <div class="info-box">
+    <div class="grid-2" style="align-items: center;">
+      <div>
+        <span class="section-tag">About SkillConnect</span>
+        <h2 style="font-size: 2rem; font-weight: 800; margin-bottom: 1rem; color: var(--neutral-900);">
+          Bridging the Skill Gap in Every Neighborhood
+        </h2>
+        <p style="color: var(--neutral-600); margin-bottom: 1rem; line-height: 1.65;">
+          SkillConnect was founded with a singular mission: to make practical education universally accessible. We believe that true community resilience begins when people have spaces to learn from one another—exchanging crafts, professional competencies, and creative wisdom.
+        </p>
+        <p style="color: var(--neutral-600); line-height: 1.65; margin-bottom: 1.5rem;">
+          Whether you want to change careers, adopt a sustainable hobby, or gain mastery over your finances, our workshops are welcoming to learners of all experience levels.
+        </p>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <a href="{{ url_for('workshops') }}" class="btn btn-primary">Browse All Workshops</a>
+          {% if not session.get('user_id') %}
+            <a href="{{ url_for('register') }}" class="btn btn-secondary">Create Free Account</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="background: var(--neutral-50); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 2rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.25rem; color: var(--primary-800);">Our Guiding Principles</h3>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+            <span style="color: var(--primary-600); font-size: 1.2rem;">✔</span>
+            <div>
+              <strong style="color: var(--neutral-900);">Inclusivity First:</strong>
+              <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0;">No prerequisites required for beginner-tier workshops.</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+            <span style="color: var(--primary-600); font-size: 1.2rem;">✔</span>
+            <div>
+              <strong style="color: var(--neutral-900);">Practical Over Theory:</strong>
+              <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0;">Hands-on practice under mentor supervision in every class.</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+            <span style="color: var(--primary-600); font-size: 1.2rem;">✔</span>
+            <div>
+              <strong style="color: var(--neutral-900);">Safe & Supportive:</strong>
+              <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0;">A constructive learning atmosphere that celebrates community growth.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================
+     8. CONTACT & INQUIRY SECTION
+     ==================================================== -->
+<section class="section-wrapper" id="contact">
+  <div class="section-header">
+    <span class="section-tag">Get in Touch</span>
+    <h2 class="section-title">Have Questions? Contact Us</h2>
+    <p class="section-subtitle">
+      Our team is here to help with workshop registrations, trainer applications, or venue partnerships.
+    </p>
+  </div>
+
+  <div class="grid-2" style="align-items: start;">
+    <!-- Contact Info Cards -->
+    <div>
+      <div class="contact-card-grid">
+        <div class="contact-item">
+          <div class="contact-item-icon">📍</div>
+          <div>
+            <strong style="font-size: 0.95rem; color: var(--neutral-900);">Campus / Hub</strong>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">100 Civic Center Plaza, Suite 400</p>
+          </div>
+        </div>
+
+        <div class="contact-item">
+          <div class="contact-item-icon">✉️</div>
+          <div>
+            <strong style="font-size: 0.95rem; color: var(--neutral-900);">Email Support</strong>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">support@skillconnect.org</p>
+          </div>
+        </div>
+
+        <div class="contact-item">
+          <div class="contact-item-icon">📞</div>
+          <div>
+            <strong style="font-size: 0.95rem; color: var(--neutral-900);">Phone Helpline</strong>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">+1 (555) 234-5678</p>
+          </div>
+        </div>
+
+        <div class="contact-item">
+          <div class="contact-item-icon">⏰</div>
+          <div>
+            <strong style="font-size: 0.95rem; color: var(--neutral-900);">Hours</strong>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Mon - Sat: 9:00 AM - 6:00 PM</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="background: var(--primary-50); border-color: var(--primary-200); padding: 1.5rem;">
+        <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--primary-800); margin-bottom: 0.4rem;">Want to Teach a Workshop?</h4>
+        <p style="font-size: 0.88rem; color: var(--primary-800); margin-bottom: 0.85rem; line-height: 1.5;">
+          We are always looking for passionate trainers, artisans, and professionals who want to lead a session.
+        </p>
+        <a href="mailto:trainers@skillconnect.org" class="btn btn-primary btn-sm">Apply as a Trainer</a>
+      </div>
+    </div>
+
+    <!-- Interactive Contact Form -->
+    <div class="card">
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.25rem;">Send Us a Message</h3>
+      <form id="contactForm">
+        <div class="form-group">
+          <label for="contact_name" class="form-label">Your Name</label>
+          <input type="text" id="contact_name" name="contact_name" class="form-control" placeholder="Jane Smith" required>
+        </div>
+
+        <div class="form-group">
+          <label for="contact_email" class="form-label">Email Address</label>
+          <input type="email" id="contact_email" name="contact_email" class="form-control" placeholder="jane@example.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="contact_subject" class="form-label">Subject</label>
+          <input type="text" id="contact_subject" name="contact_subject" class="form-control" placeholder="Inquiry about workshops..." required>
+        </div>
+
+        <div class="form-group">
+          <label for="contact_message" class="form-label">Message</label>
+          <textarea id="contact_message" name="contact_message" class="form-control" rows="4" placeholder="How can we assist you today?" required></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          Send Message
+        </button>
+      </form>
+      <div id="contactSuccessMsg" style="display: none; margin-top: 1rem;" class="alert alert-success">
+        ✓ Thank you for reaching out! Our community coordinator will respond within 24 hours.
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

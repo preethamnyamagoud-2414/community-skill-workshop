@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Workshop Feedback & Community Reviews | SkillConnect{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+  <span class="section-tag" style="background: #ecfdf5; color: #047857;">Community Quality</span>
+  <h1 style="font-size: 2.2rem; font-weight: 800; color: var(--neutral-900); margin-bottom: 0.35rem;">
+    Workshop Reviews & Feedback
+  </h1>
+  <p style="color: var(--neutral-500); font-size: 1rem;">
+    Genuine reviews and star ratings from verified community learners to maintain workshop excellence.
+  </p>
+</div>
+
+<div class="grid-2" style="align-items: start;">
+  <!-- Submit Feedback Form (Restricted to Registered Participants) -->
+  {% if workshop %}
+    <div class="card" style="padding: 2rem;">
+      <div style="margin-bottom: 1.5rem;">
+        <span class="badge badge-primary" style="margin-bottom: 0.5rem;">{{ workshop['category'] }}</span>
+        <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--neutral-900); margin-bottom: 0.25rem;">
+          Rate: {{ workshop['title'] }}
+        </h2>
+        <p style="color: var(--neutral-500); font-size: 0.9rem; margin: 0;">
+          Conducted by <strong>{{ workshop['trainer_name'] }}</strong> • Verified Participant
+        </p>
+      </div>
+
+      <form method="POST" action="{{ url_for('feedback_page', workshop_id=workshop['id']) }}">
+        <!-- Star Rating Radio Group -->
+        <div class="form-group">
+          <label class="form-label">
+            Your Overall Rating (1 to 5 Stars) <span style="color: var(--accent-red);">*</span>
+          </label>
+          <div style="display: flex; gap: 1.25rem; margin: 0.75rem 0;" class="star-rating">
+            {% set current_rating = existing_feedback['rating'] if existing_feedback else 5 %}
+            {% for star in [5, 4, 3, 2, 1] %}
+              <label style="cursor: pointer; font-size: 1.15rem; display: flex; align-items: center; gap: 0.35rem; font-weight: 600;">
+                <input type="radio" name="rating" value="{{ star }}" {% if current_rating == star %}checked{% endif %} required>
+                {{ star }} ★
+              </label>
+            {% endfor %}
+          </div>
+          <small id="selectedRatingText" style="color: var(--primary-700); font-weight: 600; font-size: 0.88rem;">
+            You selected {{ current_rating }} out of 5 stars
+          </small>
+        </div>
+
+        <!-- Written Comments -->
+        <div class="form-group">
+          <label for="comments" class="form-label">
+            Written Feedback & Testimonial <span style="color: var(--accent-red);">*</span>
+          </label>
+          <textarea 
+            id="comments" 
+            name="comments" 
+            class="form-control" 
+            rows="5" 
+            placeholder="What were the most valuable takeaways? How was the mentor's pacing? What could be improved for future attendees?" 
+            required 
+            minlength="3"
+          >{{ existing_feedback['comments'] if existing_feedback else '' }}</textarea>
+          <small style="color: var(--neutral-400); font-size: 0.8rem;">Minimum 3 characters required.</small>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="submit" class="btn btn-primary" style="flex: 1; padding: 0.75rem;">
+            {% if existing_feedback %}Update My Review{% else %}Submit Workshop Review{% endif %}
+          </button>
+          <a href="{{ url_for('workshop_details', workshop_id=workshop['id']) }}" class="btn btn-secondary">
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  {% else %}
+    <!-- Informational Card when browsing all reviews -->
+    <div class="card" style="background: var(--neutral-50); border: 1px solid var(--border-color); padding: 2rem;">
+      <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">📝</div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--neutral-900); margin-bottom: 0.5rem;">
+        How to Submit a Review
+      </h3>
+      <p style="color: var(--neutral-600); font-size: 0.92rem; line-height: 1.6; margin-bottom: 1.25rem;">
+        To ensure high-trust, genuine feedback across our platform, review submissions are exclusively restricted to <strong>registered participants</strong> of each workshop.
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <div style="display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.9rem;">
+          <span style="color: var(--primary-600); font-weight: 700;">1.</span>
+          <span>Go to your personal <a href="{{ url_for('my_workshops') }}" style="font-weight: 600;">My Workshops</a> dashboard page.</span>
+        </div>
+        <div style="display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.9rem;">
+          <span style="color: var(--primary-600); font-weight: 700;">2.</span>
+          <span>Find the session you attended and click the <strong>"Feedback"</strong> button.</span>
+        </div>
+        <div style="display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.9rem;">
+          <span style="color: var(--primary-600); font-weight: 700;">3.</span>
+          <span>Assign a star rating and leave your constructive review.</span>
+        </div>
+      </div>
+      <div style="margin-top: 1.5rem;">
+        <a href="{{ url_for('my_workshops') }}" class="btn btn-primary btn-sm">Go to My Workshops &rarr;</a>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Community Feedback Stream -->
+  <div class="card" style="padding: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--neutral-900); margin: 0;">
+        Recent Community Reviews
+      </h2>
+      <span class="badge badge-primary">{{ all_feedback|length }} Total Reviews</span>
+    </div>
+
+    {% for fb in all_feedback %}
+      <div style="border-bottom: 1px solid var(--border-color); padding: 1.25rem 0;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+          <div>
+            <strong style="font-size: 0.98rem; color: var(--neutral-900);">{{ fb['user_name'] }}</strong>
+            <div style="font-size: 0.82rem; color: var(--primary-700); font-weight: 600;">
+              {{ fb['workshop_title'] }}
+            </div>
+          </div>
+          <span style="color: var(--accent-gold); font-size: 1.05rem; font-weight: 700;">
+            {% for i in range(fb['rating']) %}★{% endfor %}
+            {% for i in range(5 - fb['rating']) %}☆{% endfor %}
+          </span>
+        </div>
+
+        <p style="font-size: 0.92rem; color: var(--neutral-700); margin: 0.5rem 0; line-height: 1.6;">
+          "{{ fb['comments'] }}"
+        </p>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+          <small style="color: var(--neutral-400); font-size: 0.78rem;">
+            Submitted on {{ fb['created_at'][:10] }}
+          </small>
+          {% if session.get('role') == 'admin' %}
+            <form action="{{ url_for('delete_feedback', feedback_id=fb['id']) }}" method="POST" style="display: inline;">
+              <button type="submit" class="btn btn-danger btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;" data-confirm="Are you sure you want to delete this review?">
+                Moderate Delete
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      <p style="color: var(--neutral-500); text-align: center; padding: 3rem 0;">No reviews published yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

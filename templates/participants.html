@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Attendee Attendance Roster | Admin Control Center{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <span class="section-tag" style="background: #ecfdf5; color: #047857;">Operations</span>
+    <h1 style="font-size: 2rem; font-weight: 800; color: var(--neutral-900); margin-bottom: 0.35rem;">
+      Workshop Attendance & Rosters
+    </h1>
+    <p style="color: var(--neutral-500); font-size: 0.95rem;">
+      View registered participants, verify attendance records (Present / Absent), and maintain learner records.
+    </p>
+  </div>
+  <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">&larr; Back to Admin Dashboard</a>
+</div>
+
+<!-- Workshop Roster Filter Toolbar -->
+<div class="card" style="margin-bottom: 2rem; padding: 1.25rem;">
+  <form method="GET" action="{{ url_for('participants') }}" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+    <div style="flex: 2; min-width: 260px;">
+      <label for="workshopFilterSelect" class="form-label" style="font-size: 0.85rem; margin-bottom: 0.25rem;">
+        Filter by Specific Workshop
+      </label>
+      <select id="workshopFilterSelect" name="workshop_id" class="form-control" onchange="this.form.submit()">
+        <option value="">All Workshops (Complete Platform Attendance Roster)</option>
+        {% for w in all_workshops %}
+          <option value="{{ w['id'] }}" {% if selected_workshop_id == w['id'] %}selected{% endif %}>
+            #{{ w['id'] }} - {{ w['title'] }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="align-self: flex-end;">
+      {% if selected_workshop_id %}
+        <a href="{{ url_for('participants') }}" class="btn btn-secondary">Clear Filter</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Participants Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Enrollment ID</th>
+          <th>Participant Name</th>
+          <th>Contact Info</th>
+          <th>Workshop Title</th>
+          <th>Schedule</th>
+          <th>Attendance Status</th>
+          <th>Mark Attendance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in participants %}
+          <tr>
+            <td><strong>#{{ p['enrollment_id'] }}</strong></td>
+            <td>
+              <strong>{{ p['user_name'] }}</strong>
+              <div style="font-size: 0.75rem; color: var(--neutral-400);">User ID: #{{ p['user_id'] }}</div>
+            </td>
+            <td>
+              <a href="mailto:{{ p['user_email'] }}">{{ p['user_email'] }}</a><br>
+              <small style="color: var(--neutral-500);">{{ p['user_phone'] or 'No phone registered' }}</small>
+            </td>
+            <td>
+              <a href="{{ url_for('workshop_details', workshop_id=p['workshop_id']) }}" style="font-weight: 600;">
+                {{ p['workshop_title'] }}
+              </a>
+            </td>
+            <td>
+              {{ p['workshop_date'] }}<br>
+              <small style="color: var(--neutral-500);">{{ p['workshop_time'] }}</small>
+            </td>
+            <td>
+              {% if p['attendance_status'] == 'Present' or p['enrollment_status'] == 'Present' or p['enrollment_status'] == 'attended' %}
+                <span class="badge badge-success">Present ✓</span>
+              {% elif p['attendance_status'] == 'Absent' or p['enrollment_status'] == 'Absent' %}
+                <span class="badge badge-warning">Absent ✗</span>
+              {% elif p['enrollment_status'] == 'confirmed' %}
+                <span class="badge badge-primary">Registered</span>
+              {% else %}
+                <span class="badge badge-danger">Cancelled</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if p['enrollment_status'] != 'cancelled' %}
+                <div style="display: flex; gap: 0.35rem; align-items: center;">
+                  <!-- Mark Present Form -->
+                  <form action="{{ url_for('mark_attendance') }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="enrollment_id" value="{{ p['enrollment_id'] }}">
+                    <input type="hidden" name="workshop_id" value="{{ selected_workshop_id or '' }}">
+                    <input type="hidden" name="status" value="Present">
+                    <button type="submit" 
+                            class="btn btn-sm {% if p['attendance_status'] == 'Present' or p['enrollment_status'] == 'Present' or p['enrollment_status'] == 'attended' %}btn-primary{% else %}btn-outline{% endif %}"
+                            title="Mark Learner as Present">
+                      Present
+                    </button>
+                  </form>
+
+                  <!-- Mark Absent Form -->
+                  <form action="{{ url_for('mark_attendance') }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="enrollment_id" value="{{ p['enrollment_id'] }}">
+                    <input type="hidden" name="workshop_id" value="{{ selected_workshop_id or '' }}">
+                    <input type="hidden" name="status" value="Absent">
+                    <button type="submit" 
+                            class="btn btn-sm {% if p['attendance_status'] == 'Absent' or p['enrollment_status'] == 'Absent' %}btn-danger{% else %}btn-secondary{% endif %}"
+                            title="Mark Learner as Absent">
+                      Absent
+                    </button>
+                  </form>
+                </div>
+              {% else %}
+                <span style="color: var(--neutral-400); font-size: 0.85rem;">Seat Released</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 3rem; color: var(--neutral-500);">
+              No participant enrollments found{% if selected_workshop_id %} for this workshop{% endif %}.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
