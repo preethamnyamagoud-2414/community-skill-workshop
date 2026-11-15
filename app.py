@@ -76,7 +76,14 @@ if not USE_MYSQL:
 # Database Helpers
 # ----------------------------------------------------
 class _Row(dict):
-    """dict row that also supports positional access like sqlite3.Row (row[0])."""
+    """dict row that also supports positional access like sqlite3.Row (row[0]).
+
+    Date/time values are returned as 'YYYY-MM-DD HH:MM:SS' strings, matching what
+    SQLite returns, because templates slice them (e.g. created_at[:10])."""
+    def __init__(self, data):
+        super().__init__({k: (v.strftime('%Y-%m-%d %H:%M:%S') if isinstance(v, datetime) else v)
+                          for k, v in data.items()})
+
     def __getitem__(self, key):
         if isinstance(key, int):
             return list(self.values())[key]
